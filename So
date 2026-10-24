@@ -1,0 +1,319 @@
+-- [[ Hacker GUI - ภาษาไทย ]] --
+
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- ลบ GUI เก่าถ้ามีอยู่
+if CoreGui:FindFirstChild("HackerGuiTH") then
+	CoreGui.HackerGuiTH:Destroy()
+end
+
+-- 1. สร้าง ScreenGui และ Main Frame (แนวนอน เท่ๆ)
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "HackerGuiTH"
+ScreenGui.Parent = CoreGui
+ScreenGui.ResetOnSpawn = false
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0, 560, 0, 310) -- ขนาดแนวนอน ไม่กว้างเกินไป
+MainFrame.Position = UDim2.new(0.5, -280, 0.5, -155)
+MainFrame.BackgroundColor3 = Color3.fromRGB(10, 15, 10) -- ดำอมเขียวเข้ม
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+-- เส้นขอบสว่างสีเขียวนีออน
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(0, 180, 70)
+UIStroke.Thickness = 2
+UIStroke.Parent = MainFrame
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.Parent = MainFrame
+
+-- 2. ฉากหลังตัวเลข 0 และ 1 แบบแฮกเกอร์ (Matrix Effect)
+local MatrixContainer = Instance.new("Frame")
+MatrixContainer.Name = "MatrixContainer"
+MatrixContainer.Size = UDim2.new(1, 0, 1, 0)
+MatrixContainer.BackgroundTransparency = 1
+MatrixContainer.ClipsDescendants = true
+MatrixContainer.Parent = MainFrame
+
+for i = 1, 35 do
+	local MatrixText = Instance.new("TextLabel")
+	MatrixText.Text = (math.random(0, 1) == 1 and "1" or "0")
+	MatrixText.Size = UDim2.new(0, 20, 0, 20)
+	MatrixText.Position = UDim2.new(math.random(), 0, math.random(), 0)
+	MatrixText.BackgroundTransparency = 1
+	MatrixText.TextColor3 = Color3.fromRGB(0, math.random(80, 160), 40) -- เขียวเข้มสลับระดับ
+	MatrixText.TextTransparency = math.random(3, 7) / 10
+	MatrixText.Font = Enum.Font.Code
+	MatrixText.TextSize = math.random(12, 18)
+	MatrixText.Parent = MatrixContainer
+end
+
+-- 3. แถบหัวข้อ (Header Bar)
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 35)
+Header.BackgroundColor3 = Color3.fromRGB(5, 30, 10)
+Header.BorderSizePixel = 0
+Header.Parent = MainFrame
+
+local HeaderCorner = Instance.new("UICorner")
+HeaderCorner.CornerRadius = UDim.new(0, 8)
+HeaderCorner.Parent = Header
+
+local Title = Instance.new("TextLabel")
+Title.Text = "⚡ HACKER SYSTEM - ระบบแฮกเกอร์ ⚡"
+Title.Size = UDim2.new(1, -40, 1, 0)
+Title.Position = UDim2.new(0, 10, 0, 0)
+Title.BackgroundTransparency = 1
+Title.TextColor3 = Color3.fromRGB(0, 255, 100)
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 14
+Title.Parent = Header
+
+-- ปุ่มพับ/ปิดหน้าต่าง
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Text = "X"
+CloseBtn.Size = UDim2.new(0, 30, 0, 25)
+CloseBtn.Position = UDim2.new(1, -33, 0, 5)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 12
+CloseBtn.Parent = Header
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 4)
+CloseCorner.Parent = CloseBtn
+
+CloseBtn.MouseButton1Click:Connect(function()
+	ScreenGui:Destroy()
+end)
+
+-- 4. พื้นที่เก็บปุ่มฟังก์ชัน (Container Grid)
+local ContentFrame = Instance.new("Frame")
+ContentFrame.Size = UDim2.new(1, -20, 1, -50)
+ContentFrame.Position = UDim2.new(0, 10, 0, 42)
+ContentFrame.BackgroundTransparency = 1
+ContentFrame.Parent = MainFrame
+
+local UIGridLayout = Instance.new("UIGridLayout")
+UIGridLayout.CellSize = UDim2.new(0, 170, 0, 45)
+UIGridLayout.CellPadding = UDim2.new(0, 10, 0, 10)
+UIGridLayout.Parent = ContentFrame
+
+-- ฟังก์ชั่นสร้างปุ่มกดเปิด/ปิดสไตล์แฮกเกอร์
+local function CreateToggleButton(name, text, callback)
+	local Btn = Instance.new("TextButton")
+	Btn.Name = name
+	Btn.Text = text .. "\n[ ปิด ]"
+	Btn.BackgroundColor3 = Color3.fromRGB(15, 35, 20)
+	Btn.TextColor3 = Color3.fromRGB(180, 180, 180)
+	Btn.Font = Enum.Font.GothamSemibold
+	Btn.TextSize = 12
+	Btn.Parent = ContentFrame
+
+	local BtnCorner = Instance.new("UICorner")
+	BtnCorner.CornerRadius = UDim.new(0, 6)
+	BtnCorner.Parent = Btn
+
+	local BtnStroke = Instance.new("UIStroke")
+	BtnStroke.Color = Color3.fromRGB(0, 80, 30)
+	BtnStroke.Thickness = 1
+	BtnStroke.Parent = Btn
+
+	local enabled = false
+	Btn.MouseButton1Click:Connect(function()
+		enabled = not enabled
+		if enabled then
+			Btn.BackgroundColor3 = Color3.fromRGB(0, 70, 30)
+			Btn.TextColor3 = Color3.fromRGB(0, 255, 120)
+			BtnStroke.Color = Color3.fromRGB(0, 200, 80)
+			Btn.Text = text .. "\n[ เปิด ]"
+		else
+			Btn.BackgroundColor3 = Color3.fromRGB(15, 35, 20)
+			Btn.TextColor3 = Color3.fromRGB(180, 180, 180)
+			BtnStroke.Color = Color3.fromRGB(0, 80, 30)
+			Btn.Text = text .. "\n[ ปิด ]"
+		end
+		callback(enabled)
+	end)
+	return Btn
+end
+
+---------------------------------------------------------
+-- 5. ระบบฟังก์ชันตามสั่ง
+---------------------------------------------------------
+
+-- [ฟังก์ชัน 1: เดินทะลุกำแพง (Noclip)]
+local noclipEnabled = false
+CreateToggleButton("NoclipBtn", "เดินทะลุกำแพง", function(state)
+	noclipEnabled = state
+end)
+
+RunService.Stepped:Connect(function()
+	if noclipEnabled and LocalPlayer.Character then
+		for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
+			end
+		end
+	end
+end)
+
+-- [ฟังก์ชัน 2: เดินเร็ว (ปรับระดับ 1 - 1000)]
+local speedValue = 16
+local SpeedFrame = Instance.new("Frame")
+SpeedFrame.Name = "SpeedFrame"
+SpeedFrame.BackgroundColor3 = Color3.fromRGB(15, 35, 20)
+SpeedFrame.Parent = ContentFrame
+
+local SpeedCorner = Instance.new("UICorner")
+SpeedCorner.CornerRadius = UDim.new(0, 6)
+SpeedCorner.Parent = SpeedFrame
+
+local SpeedStroke = Instance.new("UIStroke")
+SpeedStroke.Color = Color3.fromRGB(0, 80, 30)
+SpeedStroke.Thickness = 1
+SpeedStroke.Parent = SpeedFrame
+
+local SpeedLabel = Instance.new("TextLabel")
+SpeedLabel.Text = "ความเร็ว: 16"
+SpeedLabel.Size = UDim2.new(1, 0, 0, 20)
+SpeedLabel.BackgroundTransparency = 1
+SpeedLabel.TextColor3 = Color3.fromRGB(0, 255, 120)
+SpeedLabel.Font = Enum.Font.GothamSemibold
+SpeedLabel.TextSize = 11
+SpeedLabel.Parent = SpeedFrame
+
+local SpeedInput = Instance.new("TextBox")
+SpeedInput.Text = "16"
+SpeedInput.PlaceholderText = "1 - 1000"
+SpeedInput.Size = UDim2.new(0.8, 0, 0, 18)
+SpeedInput.Position = UDim2.new(0.1, 0, 0.5, 0)
+SpeedInput.BackgroundColor3 = Color3.fromRGB(5, 20, 10)
+SpeedInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedInput.Font = Enum.Font.Code
+SpeedInput.TextSize = 11
+SpeedInput.Parent = SpeedFrame
+
+local InputCorner = Instance.new("UICorner")
+InputCorner.CornerRadius = UDim.new(0, 4)
+InputCorner.Parent = SpeedInput
+
+SpeedInput.FocusLost:Connect(function()
+	local num = tonumber(SpeedInput.Text)
+	if num then
+		speedValue = math.clamp(num, 1, 1000)
+		SpeedInput.Text = tostring(speedValue)
+		SpeedLabel.Text = "ความเร็ว: " .. tostring(speedValue)
+	else
+		SpeedInput.Text = tostring(speedValue)
+	end
+end)
+
+RunService.RenderStepped:Connect(function()
+	if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+		LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = speedValue
+	end
+end)
+
+-- [ฟังก์ชัน 3: กระโดดไม่จำกัด (Infinite Jump)]
+local infJumpEnabled = false
+CreateToggleButton("InfJumpBtn", "กระโดดไม่จำกัด", function(state)
+	infJumpEnabled = state
+end)
+
+UserInputService.JumpRequest:Connect(function()
+	if infJumpEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+		LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+	end
+end)
+
+-- [ฟังก์ชัน 4: กระโดดสูง]
+local highJumpEnabled = false
+CreateToggleButton("HighJumpBtn", "กระโดดสูงพิเศษ", function(state)
+	highJumpEnabled = state
+	if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+		local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+		hum.UseJumpPower = true
+		hum.JumpPower = state and 150 or 50
+	end
+end)
+
+-- [ฟังก์ชัน 5: มองเห็นทุกคน (ESP / Highlight)]
+local espEnabled = false
+local function UpdateESP()
+	for _, player in pairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer and player.Character then
+			local highlight = player.Character:FindFirstChild("HackerESP")
+			if espEnabled then
+				if not highlight then
+					highlight = Instance.new("Highlight")
+					highlight.Name = "HackerESP"
+					highlight.FillColor = Color3.fromRGB(0, 255, 80)
+					highlight.OutlineColor = Color3.fromRGB(0, 100, 30)
+					highlight.FillTransparency = 0.5
+					highlight.OutlineTransparency = 0
+					highlight.Parent = player.Character
+				end
+			else
+				if highlight then
+					highlight:Destroy()
+				end
+			end
+		end
+	end
+end
+
+CreateToggleButton("ESPBtn", "มองเห็นทุกคน (ESP)", function(state)
+	espEnabled = state
+	UpdateESP()
+end)
+
+Players.PlayerAdded:Connect(function(player)
+	player.CharacterAdded:Connect(function()
+		task.wait(0.5)
+		if espEnabled then UpdateESP() end
+	end)
+end)
+
+-- [ฟังก์ชัน 6: กดปุ่มค้างให้เป็นทีเดียว (Auto-Click / Key Hold Hold Trigger)]
+local holdAutoEnabled = false
+CreateToggleButton("AutoClickBtn", "กดปุ่มค้างอัตโนมัติ", function(state)
+	holdAutoEnabled = state
+end)
+
+local isHolding = false
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed or not holdAutoEnabled then return end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		isHolding = true
+		task.spawn(function()
+			while isHolding and holdAutoEnabled do
+				if LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool") then
+					LocalPlayer.Character:FindFirstChildOfClass("Tool"):Activate()
+				end
+				task.wait(0.1)
+			end
+		end)
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		isHolding = false
+	end
+end)
+
+print("Hacker Script Loaded Successfully!")
